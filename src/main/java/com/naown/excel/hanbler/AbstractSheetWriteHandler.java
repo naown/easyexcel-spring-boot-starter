@@ -12,6 +12,8 @@ import com.naown.excel.converters.LocalDateStringConverter;
 import com.naown.excel.converters.LocalDateTimeStringConverter;
 import com.naown.excel.head.HeadGenerator;
 import com.naown.excel.head.HeadMeta;
+import com.naown.excel.util.StringUtils;
+import com.naown.excel.util.WebUtils;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
 import org.springframework.beans.BeansException;
@@ -22,7 +24,6 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.MediaTypeFactory;
 import org.springframework.util.Assert;
-import org.springframework.util.StringUtils;
 import org.springframework.web.context.request.RequestAttributes;
 import org.springframework.web.context.request.RequestContextHolder;
 
@@ -31,9 +32,9 @@ import java.io.IOException;
 import java.lang.reflect.Modifier;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
+import java.time.Instant;
 import java.util.Arrays;
 import java.util.List;
-import java.util.UUID;
 
 /**
  * @author lengleng
@@ -52,12 +53,14 @@ public abstract class AbstractSheetWriteHandler implements SheetWriteHandler, Ap
 
     private ApplicationContext applicationContext;
 
+    private final Integer DEFAULT_SHEET_NO = 1;
+
     @Override
     public void export(Object o, HttpServletResponse response, ResponseExcel responseExcel) {
         //check(responseExcel);
         RequestAttributes requestAttributes = RequestContextHolder.getRequestAttributes();
         // TODO 表格名称取值在考虑
-        String name = UUID.randomUUID().toString();
+        String name = Instant.now().toString();
         String fileName = String.format("%s%s", URLEncoder
                 .encode(name, StandardCharsets.UTF_8), responseExcel.suffix().getValue());
         // 根据实际的文件类型找到对应的 contentType
@@ -83,7 +86,7 @@ public abstract class AbstractSheetWriteHandler implements SheetWriteHandler, Ap
                 .registerConverter(LocalDateTimeStringConverter.INSTANCE).autoCloseStream(true)
                 .excelType(responseExcel.suffix()).inMemory(responseExcel.inMemory());
 
-        if (StringUtils.hasText(responseExcel.password())) {
+        if (StringUtils.isNotBlank(responseExcel.password())) {
             writerBuilder.password(responseExcel.password());
         }
 
@@ -91,8 +94,9 @@ public abstract class AbstractSheetWriteHandler implements SheetWriteHandler, Ap
             writerBuilder.includeColumnFieldNames(Arrays.asList(responseExcel.include()));
         }
 
-        if (responseExcel.exclude().length != 0) {
-            writerBuilder.excludeColumnFieldNames(Arrays.asList(responseExcel.exclude()));
+        if (StringUtils.isNotBlank(responseExcel.exclude())) {
+            String exclude = WebUtils.getAttribute("exclude", String.class);
+            writerBuilder.excludeColumnFieldNames(StringUtils.split(exclude));
         }
 
         // TODO 扩展后续添加
@@ -112,7 +116,7 @@ public abstract class AbstractSheetWriteHandler implements SheetWriteHandler, Ap
         //}
 
         //String templatePath = configProperties.getTemplatePath();
-        //if (StringUtils.hasText(responseExcel.template())) {
+        //if (.hasText(responseExcel.template())) {
         //    ClassPathResource classPathResource = new ClassPathResource(
         //            templatePath + File.separator + responseExcel.template());
         //    InputStream inputStream = classPathResource.getInputStream();
@@ -136,16 +140,16 @@ public abstract class AbstractSheetWriteHandler implements SheetWriteHandler, Ap
     /**
      * 构建一个 空的 WriteSheet 对象
      *
-     * @param sheetBuildProperties sheet build 属性
-     * @param template             模板信息
+     * @param sheetProperties sheet build 属性
+     * @param template        模板信息
      * @return WriteSheet
      */
     public WriteSheet emptySheet(Sheet sheetProperties, String template) {
         // Sheet 编号和名称
-        Integer sheetNo = sheetProperties.sheetNo() >= 0 ? sheetProperties.sheetNo() : null;
+        Integer sheetNo = sheetProperties.sheetNo() >= 0 ? sheetProperties.sheetNo() : DEFAULT_SHEET_NO;
 
         // 是否模板写入
-        ExcelWriterSheetBuilder writerSheetBuilder = StringUtils.hasText(template) ? EasyExcel.writerSheet(sheetNo)
+        ExcelWriterSheetBuilder writerSheetBuilder = StringUtils.isNotBlank(template) ? EasyExcel.writerSheet(sheetNo)
                 : EasyExcel.writerSheet(sheetNo, sheetProperties.sheetName());
 
         return writerSheetBuilder.build();
@@ -154,7 +158,7 @@ public abstract class AbstractSheetWriteHandler implements SheetWriteHandler, Ap
     /**
      * 获取 WriteSheet 对象
      *
-     * @param sheetBuildProperties  sheet annotation info
+     * @param sheetProperties       sheet annotation info
      * @param dataClass             数据类型
      * @param template              模板
      * @param bookHeadEnhancerClass 自定义头处理器
@@ -164,11 +168,11 @@ public abstract class AbstractSheetWriteHandler implements SheetWriteHandler, Ap
                                  Class<? extends HeadGenerator> bookHeadEnhancerClass) {
 
         // Sheet 编号和名称
-        Integer sheetNo = sheetProperties.sheetNo() >= 0 ? sheetProperties.sheetNo() : null;
+        Integer sheetNo = sheetProperties.sheetNo() >= 0 ? sheetProperties.sheetNo() : DEFAULT_SHEET_NO;
         String sheetName = sheetProperties.sheetName();
 
         // 是否模板写入
-        ExcelWriterSheetBuilder writerSheetBuilder = StringUtils.hasText(template) ? EasyExcel.writerSheet(sheetNo)
+        ExcelWriterSheetBuilder writerSheetBuilder = StringUtils.isNotBlank(template) ? EasyExcel.writerSheet(sheetNo)
                 : EasyExcel.writerSheet(sheetNo, sheetName);
 
         // 头信息增强 1. 优先使用 sheet 指定的头信息增强 2. 其次使用 @ResponseExcel 中定义的全局头信息增强
@@ -184,16 +188,16 @@ public abstract class AbstractSheetWriteHandler implements SheetWriteHandler, Ap
         } else if (dataClass != null) {
             writerSheetBuilder.head(dataClass);
             if (sheetProperties.excludes().length > 0) {
-                writerSheetBuilder.excludeColumnFiledNames(Arrays.asList(sheetProperties.excludes()));
+                writerSheetBuilder.excludeColumnFieldNames(Arrays.asList(sheetProperties.excludes()));
             }
             if (sheetProperties.includes().length > 0) {
-                writerSheetBuilder.includeColumnFiledNames(Arrays.asList(sheetProperties.includes()));
+                writerSheetBuilder.includeColumnFieldNames(Arrays.asList(sheetProperties.includes()));
             }
         }
 
         // sheetBuilder 增强
         //writerSheetBuilder = excelWriterBuilderEnhance.enhanceSheet(writerSheetBuilder, sheetNo, sheetName, dataClass,
-                //template, headGenerateClass);
+        //template, headGenerateClass);
 
         return writerSheetBuilder.build();
     }

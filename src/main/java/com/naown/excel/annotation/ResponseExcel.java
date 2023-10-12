@@ -73,7 +73,7 @@ public @interface ResponseExcel {
      *
      * @return String[]
      */
-    String[] exclude() default {};
+    String exclude() default "";
 
     /**
      * 拦截器，自定义样式等处理器
@@ -93,13 +93,6 @@ public @interface ResponseExcel {
      * @return HeadGenerator
      */
     Class<? extends HeadGenerator> headGenerator() default HeadGenerator.class;
-
-    /**
-     * excel 头信息国际化
-     *
-     * @return boolean
-     */
-    boolean i18nHeader() default false;
 
     /**
      * 填充模式

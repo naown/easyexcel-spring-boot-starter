@@ -6,11 +6,14 @@ import com.alibaba.excel.write.metadata.WriteSheet;
 import com.naown.excel.annotation.ResponseExcel;
 import com.naown.excel.annotation.Sheet;
 import org.springframework.beans.factory.ObjectProvider;
+import org.springframework.core.annotation.Order;
 
 import javax.servlet.http.HttpServletResponse;
 import java.util.List;
 
 /**
+ * 默认使用单Sheet导出
+ *
  * @author lengleng
  * @author L.cm
  * @author Hccake
@@ -18,6 +21,7 @@ import java.util.List;
  * <p>
  * 处理单sheet 页面
  */
+@Order(-1)
 public class SingleSheetWriteHandler extends AbstractSheetWriteHandler {
     public SingleSheetWriteHandler(ObjectProvider<List<Converter<?>>> converterProvider) {
         super(converterProvider);
@@ -42,7 +46,7 @@ public class SingleSheetWriteHandler extends AbstractSheetWriteHandler {
     @Override
     public void write(Object obj, HttpServletResponse response, ResponseExcel responseExcel) {
         List<?> eleList = (List<?>) obj;
-        ExcelWriter excelWriter = getExcelWriter(response, responseExcel);
+        ExcelWriter excelWriter = super.getExcelWriter(response, responseExcel);
 
         // 获取 Sheet 配置
         Sheet sheetProperties = responseExcel.sheets();

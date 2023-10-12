@@ -24,7 +24,6 @@
     </properties>
 
     <dependencies>
-
         <dependency>
             <groupId>org.projectlombok</groupId>
             <artifactId>lombok</artifactId>
@@ -55,6 +54,11 @@
             <artifactId>spring-boot-starter-web</artifactId>
             <version>${spring-boot.version}</version>
         </dependency>
+
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-aop</artifactId>
+        </dependency>
     </dependencies>
 
     <build>
@@ -71,5 +75,16 @@
             </plugin>
         </plugins>
     </build>
+
+    <distributionManagement>
+        <repository>
+            <id>my-repo</id>
+            <url>rdc-releases::default::https://packages.aliyun.com/maven/repository/2408069-release-NT4QQy/</url>
+        </repository>
+        <snapshotRepository>
+            <id>my-snapshots</id>
+            <url>rdc-snapshots::default::https://packages.aliyun.com/maven/repository/2408069-snapshot-VvXj1v/</url>
+        </snapshotRepository>
+    </distributionManagement>
 
 </project>

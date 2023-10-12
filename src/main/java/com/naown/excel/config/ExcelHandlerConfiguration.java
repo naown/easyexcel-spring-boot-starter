@@ -1,7 +1,9 @@
 package com.naown.excel.config;
 
 import com.alibaba.excel.converters.Converter;
-import com.naown.excel.hanbler.ResponseExcelReturnValueHandler;
+import com.naown.excel.aop.ExcelAspect;
+import com.naown.excel.aop.ResponseExcelReturnValueHandler;
+import com.naown.excel.hanbler.ManySheetWriteHandler;
 import com.naown.excel.hanbler.SheetWriteHandler;
 import com.naown.excel.hanbler.SingleSheetWriteHandler;
 import com.naown.excel.head.EmptyHeadGenerator;
@@ -28,6 +30,18 @@ public class ExcelHandlerConfiguration {
     @ConditionalOnMissingBean(SingleSheetWriteHandler.class)
     public SingleSheetWriteHandler singleSheetWriteHandler() {
         return new SingleSheetWriteHandler(converterProvider);
+    }
+
+    @Bean
+    @ConditionalOnMissingBean(ManySheetWriteHandler.class)
+    public ManySheetWriteHandler manySheetWriteHandler() {
+        return new ManySheetWriteHandler(converterProvider);
+    }
+
+    @Bean
+    @ConditionalOnMissingBean(ExcelAspect.class)
+    public ExcelAspect excelAspect() {
+        return new ExcelAspect();
     }
 
     /**
